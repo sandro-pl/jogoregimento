@@ -11,7 +11,6 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background: #ff7b00;
             background: linear-gradient(90deg, rgba(255, 123, 0, 1) 0%, rgba(255, 255, 255, 1) 50%, rgba(30, 0, 255, 1) 100%);
             display: flex;
             flex-direction: column;
@@ -57,17 +56,29 @@
         .space-quiz { background-color: #ffffff; color: #818cf8; } /* Branco com ícone roxo */
         .space-decisao { background-color: #fb923c; color: white; } /* Laranja claro */
         .space-evento { background-color: #7dd3fc; color: white; } /* Azul claro */
+        .space-estrategia { background-color: #9333ea; color: white; } /* Roxo para Estratégia */
         
-        #dice-face {
+        #dice-container {
+            perspective: 1000px;
+        }
+        #dice {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1s;
+        }
+        .face {
+            position: absolute;
             width: 80px;
             height: 80px;
             background-color: white;
+            border: 2px solid #ccc;
             border-radius: 12px;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
             padding: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         .dot {
             width: 16px;
@@ -75,18 +86,23 @@
             background-color: #333;
             border-radius: 50%;
             place-self: center;
-            visibility: hidden;
         }
-        .dice-1 .dot:nth-child(5) { visibility: visible; }
-        .dice-2 .dot:nth-child(1), .dice-2 .dot:nth-child(9) { visibility: visible; }
-        .dice-3 .dot:nth-child(1), .dice-3 .dot:nth-child(5), .dice-3 .dot:nth-child(9) { visibility: visible; }
-        .dice-4 .dot:nth-child(1), .dice-4 .dot:nth-child(3), .dice-4 .dot:nth-child(7), .dice-4 .dot:nth-child(9) { visibility: visible; }
-        .dice-5 .dot:nth-child(1), .dice-5 .dot:nth-child(3), .dice-5 .dot:nth-child(5), .dice-5 .dot:nth-child(7), .dice-5 .dot:nth-child(9) { visibility: visible; }
-        .dice-6 .dot:nth-child(1), .dice-6 .dot:nth-child(3), .dice-6 .dot:nth-child(4), .dice-6 .dot:nth-child(6), .dice-6 .dot:nth-child(7), .dice-6 .dot:nth-child(9) { visibility: visible; }
-        
-        .modal {
-            transition: opacity 0.3s ease;
-        }
+        .face-1 .dot:nth-child(5) { visibility: visible; }
+        .face-2 .dot:nth-child(1), .face-2 .dot:nth-child(9) { visibility: visible; }
+        .face-3 .dot:nth-child(1), .face-3 .dot:nth-child(5), .face-3 .dot:nth-child(9) { visibility: visible; }
+        .face-4 .dot:nth-child(1), .face-4 .dot:nth-child(3), .face-4 .dot:nth-child(7), .face-4 .dot:nth-child(9) { visibility: visible; }
+        .face-5 .dot:nth-child(1), .face-5 .dot:nth-child(3), .face-5 .dot:nth-child(5), .face-5 .dot:nth-child(7), .face-5 .dot:nth-child(9) { visibility: visible; }
+        .face-6 .dot:nth-child(1), .face-6 .dot:nth-child(3), .face-6 .dot:nth-child(4), .face-6 .dot:nth-child(6), .face-6 .dot:nth-child(7), .face-6 .dot:nth-child(9) { visibility: visible; }
+        .face .dot { visibility: hidden; }
+
+        .front  { transform: rotateY(  0deg) translateZ(40px); }
+        .back   { transform: rotateX(180deg) translateZ(40px); }
+        .right  { transform: rotateY( 90deg) translateZ(40px); }
+        .left   { transform: rotateY(-90deg) translateZ(40px); }
+        .top    { transform: rotateX( 90deg) translateZ(40px); }
+        .bottom { transform: rotateX(-90deg) translateZ(40px); }
+
+        .modal { transition: opacity 0.3s ease; }
         
         .player-info.active {
             border: 4px solid #f08324;
@@ -97,7 +113,7 @@
 <body class="p-4 md:p-8">
     <main class="flex-grow">
         <div id="game-setup" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg text-center">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Senac_logo.svg/1200px-Senac_logo.svg.png" alt="Logo Senac" class="h-12 mx-auto mb-6">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Senac_logo.svg/1200px-Senac_logo.svg.png" alt="Logo Senac" class="h-12 mx-auto mb-6" onerror="this.style.display='none'">
             <h1 class="text-3xl font-bold text-[#005594] mb-2">Jogo do Regimento Educacional</h1>
             <p class="text-gray-600 mb-6">Responda quizzes, resolva puzzles e some pontos!</p>
             <div class="mb-4">
@@ -117,28 +133,13 @@
                 <div class="lg:col-span-2 bg-white p-4 rounded-xl shadow-lg">
                     <h2 class="text-2xl font-bold text-center text-[#005594] mb-4">Tabuleiro</h2>
                     <div id="board" class="board-grid p-2 bg-gray-200 rounded-lg"></div>
-                    <!-- Legenda adicionada aqui -->
                     <div id="legend" class="mt-4 flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-sm text-gray-600">
-                        <div class="flex items-center gap-2">
-                            <div class="w-5 h-5 rounded-full flex items-center justify-center font-bold space-quiz">❓</div>
-                            <span>Quiz</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-5 h-5 rounded-full flex items-center justify-center font-bold space-sorte text-white">⭐</div>
-                            <span>Sorte</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-5 h-5 rounded-full flex items-center justify-center font-bold space-reves text-white">⚠️</div>
-                            <span>Revés</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-5 h-5 rounded-full flex items-center justify-center font-bold space-decisao text-white">🧭</div>
-                            <span>Decisão</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-5 h-5 rounded-full flex items-center justify-center font-bold space-evento text-white">📅</div>
-                            <span>Evento</span>
-                        </div>
+                        <div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full flex items-center justify-center font-bold space-quiz">❓</div><span>Quiz</span></div>
+                        <div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full flex items-center justify-center font-bold space-sorte text-white">⭐</div><span>Sorte</span></div>
+                        <div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full flex items-center justify-center font-bold space-reves text-white">⚠️</div><span>Revés</span></div>
+                        <div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full flex items-center justify-center font-bold space-decisao text-white">🧭</div><span>Decisão</span></div>
+                        <div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full flex items-center justify-center font-bold space-evento text-white">📅</div><span>Evento</span></div>
+                        <div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full flex items-center justify-center font-bold space-estrategia text-white">💡</div><span>Estratégia</span></div>
                     </div>
                 </div>
 
@@ -149,11 +150,16 @@
                     </div>
                     <div class="text-center">
                         <p id="turn-info" class="text-lg font-semibold mb-4">É a vez de...</p>
-                        <div class="flex justify-center mb-4">
-                            <div id="dice-face" class="dice-1">
-                                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-                                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-                                <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                        <div class="flex justify-center items-center mb-4 h-[80px]">
+                            <div id="dice-container">
+                                <div id="dice">
+                                    <div class="face front face-1"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                                    <div class="face back face-6"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                                    <div class="face right face-4"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                                    <div class="face left face-3"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                                    <div class="face top face-5"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                                    <div class="face bottom face-2"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                                </div>
                             </div>
                         </div>
                         <button id="roll-dice-btn" class="w-full bg-[#005594] text-white py-3 px-4 rounded-lg font-bold text-lg hover:bg-blue-800 transition disabled:bg-gray-400">Lançar Dado</button>
@@ -179,6 +185,7 @@
         
         let puzzleTimer = null;
 
+        // --- CONTEÚDO DO JOGO (PERGUNTAS, CARTAS, ETC.) ---
         const quizQuestions = [
             { question: "Qual é a frequência mínima obrigatória para ser aprovado?", options: ["50%", "70%", "75%", "85%"], correct: 2 },
             { question: "Qual setor emite Diplomas e Históricos?", options: ["Setor Técnico", "Biblioteca", "Direção", "Secretaria Escolar"], correct: 3 },
@@ -289,35 +296,45 @@
             { text: "Semana de provas! A pressão aumentou. Fique uma rodada sem jogar para 'estudar' e se concentrar.", stuck: 1 }
         ];
 
+        // NOVO: Banco de Cartas de Estratégia
+        const strategyCards = [
+            { id: 'sabotagem', name: 'Sabotagem Amistosa', description: 'Escolha um oponente para voltar 3 casas.', requiresTarget: true },
+            { id: 'turbo', name: 'Turbo', description: 'Na sua próxima jogada, jogue o dado duas vezes.', requiresTarget: false },
+            { id: 'consulta', name: 'Consulta aos Manuais', description: 'Use esta carta para pular uma pergunta de Quiz sem penalidade.', requiresTarget: false },
+            { id: 'troca', name: 'Troca de Lugar', description: 'Escolha um oponente e troque de posição com ele.', requiresTarget: true }
+        ];
+
+        // MODIFICADO: Casas especiais com novas casas de Estratégia
         const specialSpaces = {
-            5: { type: 'sorte', text: 'Atitude exemplar! Você propôs melhorias no curso e respeitou a diversidade da turma, como manda o Art. 25. Ganhe 30 pontos e avance 2 casas!', bonus_move: 2 },
-            15: { type: 'sorte', text: 'Conhecimento em dia! Você utilizou a biblioteca (Art. 17) para aprofundar seus estudos. Ganhe 30 pontos e avance 3 casas!', bonus_move: 3 },
-            33: { type: 'sorte', text: 'Cidadania na prática! Sua participação ativa no Conselho Escolar (Art. 11) ajudou a construir uma escola melhor. Ganhe 30 pontos e avance 2 casas!', bonus_move: 2 },
-            52: { type: 'sorte', text: 'Profissional de destaque! Seu desempenho no Estágio (Art. 38) foi excelente. Ganhe 30 pontos e avance 4 casas!', bonus_move: 4 },
-            
-            10: { type: 'reves', puzzleId: 0, penalty_text: "Tempo esgotado! Você perdeu 25 pontos e deve voltar 3 casas." },
-            18: { type: 'reves', puzzleId: 1, penalty_text: "Tempo esgotado! Você perdeu 25 pontos e deve voltar 4 casas." },
-            28: { type: 'reves', puzzleId: 2, penalty_text: "Tempo esgotado! Você perdeu 25 pontos e ficará 1 rodada sem jogar." },
-            38: { type: 'reves', puzzleId: 3, penalty_text: "Tempo esgotado! Você perdeu 25 pontos e deve voltar 5 casas." },
-            44: { type: 'reves', puzzleId: 4, penalty_text: "Tempo esgotado! Você perdeu 25 pontos e deve voltar 2 casas." },
-            55: { type: 'reves', puzzleId: 5, penalty_text: "Tempo esgotado! Você perdeu 25 pontos e deve voltar 3 casas." },
-
+            5: { type: 'estrategia', text: 'Atitude exemplar! Você ganhou uma Carta de Estratégia por sua contribuição à turma!' },
             8: { type: 'decisao', decisionId: 0 },
-            25: { type: 'decisao', decisionId: 1 },
-            35: { type: 'decisao', decisionId: 2 },
-            49: { type: 'decisao', decisionId: 3 },
-
+            10: { type: 'reves', puzzleId: 0, penalty_text: "Tempo esgotado! Você perdeu 25 pontos e deve voltar 3 casas." },
+            15: { type: 'sorte', text: 'Conhecimento em dia! Você utilizou a biblioteca (Art. 17) para aprofundar seus estudos. Ganhe 30 pontos e avance 3 casas!', bonus_move: 3 },
+            18: { type: 'reves', puzzleId: 1, penalty_text: "Tempo esgotado! Você perdeu 25 pontos e deve voltar 4 casas." },
             22: { type: 'evento', eventId: 0 },
+            25: { type: 'decisao', decisionId: 1 },
+            28: { type: 'reves', puzzleId: 2, penalty_text: "Tempo esgotado! Você perdeu 25 pontos e ficará 1 rodada sem jogar." },
             30: { type: 'evento', eventId: 1 },
+            33: { type: 'estrategia', text: 'Cidadania na prática! Sua participação ativa rendeu uma Carta de Estratégia!' },
+            35: { type: 'decisao', decisionId: 2 },
+            38: { type: 'reves', puzzleId: 3, penalty_text: "Tempo esgotado! Você perdeu 25 pontos e deve voltar 5 casas." },
             40: { type: 'evento', eventId: 2 },
+            44: { type: 'reves', puzzleId: 4, penalty_text: "Tempo esgotado! Você perdeu 25 pontos e deve voltar 2 casas." },
             48: { type: 'evento', eventId: 3 },
+            49: { type: 'decisao', decisionId: 3 },
+            52: { type: 'sorte', text: 'Profissional de destaque! Seu desempenho no Estágio (Art. 38) foi excelente. Ganhe 30 pontos e avance 4 casas!', bonus_move: 4 },
+            55: { type: 'reves', puzzleId: 5, penalty_text: "Tempo esgotado! Você perdeu 25 pontos e deve voltar 3 casas." },
         };
 
+        // --- ESTADO DO JOGO ---
         let players = [];
         let currentPlayerIndex = 0;
         let isGameActive = true;
         let availableQuizIndices = [];
+        let finalRoundTriggered = false;
+        let finalRoundPlayerIndex = -1;
 
+        // --- ELEMENTOS DO DOM ---
         const gameSetupEl = document.getElementById('game-setup');
         const gameContainerEl = document.getElementById('game-container');
         const playerCountSelect = document.getElementById('player-count');
@@ -328,10 +345,11 @@
         const turnInfoEl = document.getElementById('turn-info');
         const rollDiceBtn = document.getElementById('roll-dice-btn');
         const restartGameBtn = document.getElementById('restart-game-btn');
-        const diceFaceEl = document.getElementById('dice-face');
+        const diceEl = document.getElementById('dice');
         const modalEl = document.getElementById('modal');
         const modalContentEl = document.getElementById('modal-content');
 
+        // --- FUNÇÕES DE INICIALIZAÇÃO ---
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -345,46 +363,24 @@
         }
 
         function getNextQuestionId() {
-            if (availableQuizIndices.length === 0) {
-                setupQuizDeck();
-            }
+            if (availableQuizIndices.length === 0) setupQuizDeck();
             return availableQuizIndices.pop();
         }
 
         function createBoard() {
             let html = '';
-            // Simplified loop for 60 spaces
             for (let i = 0; i < boardSpaces; i++) {
                 const spaceData = specialSpaces[i] || { type: 'quiz' };
                 let icon = getIcon(spaceData.type);
-                let content = i;
-
-                if (i === 0) {
-                    icon = '🏁';
-                    content = icon;
-                } else if (i === boardSpaces - 1) {
-                    icon = '🏆';
-                    content = icon;
-                } else if (icon) {
-                    content = `<span>${icon}</span>`;
-                }
-
+                let content = i === 0 ? '🏁' : (i === boardSpaces - 1 ? '🏆' : `<span>${icon}</span>`);
                 const spaceClass = i === 0 ? 'space-start' : (i === boardSpaces - 1 ? 'space-finish' : `space-${spaceData.type}`);
-
                 html += `<div id="space-${i}" data-space-type="${spaceData.type}" class="board-space ${spaceClass}">${content}</div>`;
             }
             boardEl.innerHTML = html;
         }
 
-
         function getIcon(type){
-            const icons = {
-                sorte: '⭐',
-                reves: '⚠️',
-                quiz: '❓',
-                decisao: '🧭',
-                evento: '📅'
-            };
+            const icons = { sorte: '⭐', reves: '⚠️', quiz: '❓', decisao: '🧭', evento: '📅', estrategia: '💡' };
             return icons[type] || '';
         }
         
@@ -407,9 +403,11 @@
             players = [];
             for (let i = 0; i < count; i++) {
                 const nameInput = document.getElementById(`player-name-${i}`);
-                players.push({ name: nameInput.value || `Jogador ${i + 1}`, position: 0, color: playerColors[i], isStuck: 0, score: 0 });
+                players.push({ name: nameInput.value || `Jogador ${i + 1}`, position: 0, color: playerColors[i], isStuck: 0, score: 0, cards: [], hasTurbo: false, canSkipQuiz: false });
             }
             setupQuizDeck();
+            finalRoundTriggered = false;
+            finalRoundPlayerIndex = -1;
             gameSetupEl.classList.add('hidden');
             gameContainerEl.classList.remove('hidden');
             createBoard();
@@ -433,12 +431,53 @@
             });
         }
         
+        // --- LÓGICA PRINCIPAL DO JOGO ---
         function rollDice() {
             if (!isGameActive) return;
             rollDiceBtn.disabled = true;
-            const roll = Math.floor(Math.random() * 6) + 1;
-            diceFaceEl.className = `dice-${roll}`;
-            setTimeout(() => movePlayer(roll), 500);
+            
+            const player = players[currentPlayerIndex];
+            const rollCount = player.hasTurbo ? 2 : 1;
+            player.hasTurbo = false; // Usa a carta
+            
+            let totalRoll = 0;
+            let rolls = [];
+            const rollInterval = 50;
+            let animationCounter = 0;
+
+            const animation = setInterval(() => {
+                const randomX = Math.floor(Math.random() * 4) * 90;
+                const randomY = Math.floor(Math.random() * 4) * 90;
+                diceEl.style.transform = `rotateX(${randomX}deg) rotateY(${randomY}deg)`;
+                animationCounter++;
+                if (animationCounter > 20) {
+                     clearInterval(animation);
+                     for (let i = 0; i < rollCount; i++) {
+                        rolls.push(Math.floor(Math.random() * 6) + 1);
+                     }
+                     totalRoll = rolls.reduce((a, b) => a + b, 0);
+                     showDiceResult(rolls[rolls.length - 1]);
+
+                     if (rollCount > 1) {
+                        const turnInfoOriginalText = turnInfoEl.textContent;
+                        turnInfoEl.innerHTML = `Turbo! Rolou ${rolls.join(' + ')} = <span class="font-black">${totalRoll}</span>`;
+                        setTimeout(() => turnInfoEl.textContent = turnInfoOriginalText, 2000);
+                     }
+                     setTimeout(() => movePlayer(totalRoll), 500);
+                }
+            }, rollInterval);
+        }
+
+        function showDiceResult(roll) {
+            const rotations = {
+                1: 'rotateY(0deg)',
+                6: 'rotateX(180deg)',
+                4: 'rotateY(90deg)',
+                3: 'rotateY(-90deg)',
+                5: 'rotateX(90deg)',
+                2: 'rotateX(-90deg)'
+            };
+            diceEl.style.transform = rotations[roll];
         }
 
         function movePlayer(steps) {
@@ -447,13 +486,67 @@
 
             if (player.position >= boardSpaces - 1) {
                 player.position = boardSpaces - 1;
-                player.score += POINTS.FINISH_BONUS;
                 updatePawnPosition(player, currentPlayerIndex);
-                setTimeout(endGameAndShowWinner, 700);
+                player.score += POINTS.FINISH_BONUS;
+                updatePlayersPanel();
+
+                if (!finalRoundTriggered) {
+                    finalRoundTriggered = true;
+                    finalRoundPlayerIndex = currentPlayerIndex;
+                    showCard('Rodada Final!', `${player.name} cruzou a linha de chegada! Cada jogador terá mais uma rodada.`, '#f08324');
+                    setTimeout(() => nextTurn(), 3000);
+                } else {
+                    nextTurn();
+                }
                 return;
             }
             updatePawnPosition(player, currentPlayerIndex);
             setTimeout(() => handleSpaceAction(player.position), 700);
+        }
+
+        function handleSpaceAction(position) {
+            let spaceData = specialSpaces[position];
+            if (!spaceData) { spaceData = { type: 'quiz' }; }
+
+            switch(spaceData.type) {
+                case 'sorte':
+                    players[currentPlayerIndex].score += POINTS.SORTE;
+                    showCard('Sorte!', spaceData.text, '#4ade80');
+                    handleSorteEffect(spaceData);
+                    break;
+                case 'estrategia':
+                    const card = strategyCards[Math.floor(Math.random() * strategyCards.length)];
+                    players[currentPlayerIndex].cards.push(card);
+                    showCard('Carta de Estratégia!', `Você recebeu a carta: "${card.name}". Use-a com sabedoria!`, '#9333ea');
+                    updatePlayersPanel();
+                    setTimeout(nextTurn, 2500);
+                    break;
+                case 'reves': showPuzzle(spaceData.puzzleId); break;
+                case 'decisao': showDecision(spaceData.decisionId); break;
+                case 'evento': handleEvent(spaceData.eventId); break;
+                case 'quiz': showQuiz(getNextQuestionId()); break;
+            }
+            updatePlayersPanel();
+        }
+
+        function nextTurn() {
+            const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            if (finalRoundTriggered && nextPlayerIndex === finalRoundPlayerIndex) {
+                setTimeout(endGameAndShowWinner, 500);
+                return;
+            }
+            currentPlayerIndex = nextPlayerIndex;
+            updateTurnInfo();
+            const nextPlayer = players[currentPlayerIndex];
+            if (nextPlayer.isStuck > 0) {
+                nextPlayer.isStuck--;
+                setTimeout(() => {
+                    showCard('Aguarde!', `${nextPlayer.name} está de "molho" nesta rodada.`, '#a1a1aa');
+                    setTimeout(nextTurn, 1500);
+                }, 500);
+            } else {
+                rollDiceBtn.disabled = false;
+            }
         }
         
         function endGameAndShowWinner() {
@@ -463,64 +556,105 @@
             showWinnerScreen(winner);
         }
 
-        function updatePawnPosition(player, index) {
-            const pawn = document.getElementById(`pawn-${index}`);
-            const targetSpace = document.getElementById(`space-${player.position}`);
-            const offset = (index * 25) + 12.5;
-            pawn.style.left = `calc(${offset}% - 12.5%)`;
-            pawn.style.top = `calc(50% - 12.5%)`;
-            if(targetSpace) targetSpace.appendChild(pawn);
-            updatePlayersPanel();
-        }
-
-        function handleSpaceAction(position) {
-            let spaceData = specialSpaces[position];
-            if (!spaceData) {
-                spaceData = { type: 'quiz' };
+        // --- LÓGICA DAS CARTAS DE ESTRATÉGIA ---
+        window.showCardUsageModal = function(playerIndex, cardIndex) {
+            if(playerIndex !== currentPlayerIndex) {
+                showCard("Atenção!", "Você só pode usar suas cartas na sua vez.", "#f87171");
+                setTimeout(closeModal, 2000);
+                return;
             }
 
-            switch(spaceData.type) {
-                case 'sorte':
-                    players[currentPlayerIndex].score += POINTS.SORTE;
-                    showCard('Sorte!', spaceData.text, '#4ade80');
-                    handleSorteEffect(spaceData);
-                    break;
-                case 'reves':
-                    showPuzzle(spaceData.puzzleId);
-                    break;
-                case 'decisao':
-                    showDecision(spaceData.decisionId);
-                    break;
-                case 'evento':
-                    handleEvent(spaceData.eventId);
-                    break;
-                case 'quiz':
-                    showQuiz(getNextQuestionId());
-                    break;
-            }
-            updatePlayersPanel();
-        }
-        
-        function handleEvent(eventId){
-            const player = players[currentPlayerIndex];
-            const event = eventChallenges[eventId];
-            showCard("Evento Acadêmico!", event.text, '#7dd3fc');
+            const player = players[playerIndex];
+            const card = player.cards[cardIndex];
 
-            if(event.points) player.score += event.points;
-            if(event.move) player.position += event.move;
-            if(event.stuck) player.isStuck = event.stuck;
-            
-            setTimeout(() => {
-                updatePawnPosition(player, currentPlayerIndex);
-                updatePlayersPanel();
-                if(event.play_again) {
-                    rollDiceBtn.disabled = false;
-                } else {
-                    nextTurn();
+            modalContentEl.innerHTML = `
+                <h2 class="text-3xl font-bold mb-4 text-[#9333ea]">Usar Carta?</h2>
+                <p class="text-xl text-gray-700 mb-2">${card.name}</p>
+                <p class="text-md text-gray-600 mb-6">${card.description}</p>
+                <div class="flex justify-center gap-4">
+                    <button onclick="closeModal()" class="bg-gray-500 text-white py-2 px-6 rounded-lg font-semibold hover:bg-gray-600">Cancelar</button>
+                    <button onclick="useCard(${playerIndex}, ${cardIndex})" class="bg-[#9333ea] text-white py-2 px-6 rounded-lg font-semibold hover:bg-purple-700">Confirmar</button>
+                </div>
+            `;
+            openModal();
+        }
+
+        window.useCard = function(playerIndex, cardIndex) {
+            const player = players[playerIndex];
+            const card = player.cards.splice(cardIndex, 1)[0]; // Remove a carta e a obtém
+            updatePlayersPanel();
+
+            if (card.requiresTarget) {
+                showTargetSelectionModal(card);
+            } else {
+                switch (card.id) {
+                    case 'turbo':
+                        player.hasTurbo = true;
+                        showCard('Turbo Ativado!', 'Você jogará o dado duas vezes.', '#9333ea');
+                        break;
+                    case 'consulta':
+                        player.canSkipQuiz = true;
+                        showCard('Consulta aos Manuais', 'Você poderá pular a próxima pergunta de Quiz.', '#9333ea');
+                        break;
                 }
-            }, 1500);
+                updatePlayersPanel();
+                setTimeout(closeModal, 2000);
+            }
         }
 
+        window.showTargetSelectionModal = function(card) {
+            const otherPlayers = players.filter((p, i) => i !== currentPlayerIndex);
+            if (otherPlayers.length === 0) {
+                showCard('Sem Alvos!', 'Não há outros jogadores para usar esta carta.', '#a1a1aa');
+                setTimeout(closeModal, 2000);
+                return;
+            }
+
+            modalContentEl.innerHTML = `
+                <h2 class="text-3xl font-bold mb-4 text-[#9333ea]">Escolha um Alvo</h2>
+                <p class="text-lg text-gray-600 mb-6">Selecione o jogador para a carta "${card.name}".</p>
+                <div class="grid grid-cols-1 gap-3 mb-6">
+                    ${otherPlayers.map(p => {
+                        const targetIndex = players.findIndex(pl => pl.name === p.name);
+                        return `<button class="p-3 border-2 rounded-lg hover:bg-gray-100" style="border-color:${p.color}" onclick="applyTargetedCardEffect('${card.id}', ${targetIndex})">${p.name}</button>`
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        window.applyTargetedCardEffect = function(cardId, targetIndex) {
+            const currentPlayer = players[currentPlayerIndex];
+            const targetPlayer = players[targetIndex];
+
+            switch(cardId) {
+                case 'sabotagem':
+                    targetPlayer.position -= 3;
+                    if (targetPlayer.position < 0) targetPlayer.position = 0;
+                    showCard('Sabotagem!', `${targetPlayer.name} voltou 3 casas!`, '#f87171');
+                    updatePawnPosition(targetPlayer, targetIndex);
+                    break;
+                case 'troca':
+                    const currentPos = currentPlayer.position;
+                    currentPlayer.position = targetPlayer.position;
+                    targetPlayer.position = currentPos;
+                    showCard('Troca de Posição!', `${currentPlayer.name} e ${targetPlayer.name} trocaram de lugar!`, '#9333ea');
+                    updatePawnPosition(currentPlayer, currentPlayerIndex);
+                    updatePawnPosition(targetPlayer, targetIndex);
+                    break;
+            }
+            updatePlayersPanel();
+            setTimeout(closeModal, 2000);
+        }
+
+        window.skipQuiz = function() {
+            const player = players[currentPlayerIndex];
+            player.canSkipQuiz = false;
+            updatePlayersPanel();
+            showCard('Quiz Pulado!', 'Você usou a carta e pulou a pergunta.', '#4ade80');
+            setTimeout(nextTurn, 1500);
+        }
+
+        // --- FUNÇÕES DE LÓGICA DAS CASAS ESPECIAIS ---
         function handleSorteEffect(special) {
             const player = players[currentPlayerIndex];
             if (special.bonus_move) {
@@ -537,14 +671,15 @@
                 }
             }, 1500);
         }
-
+        
         function applyRevesPenalty(puzzleId) {
             if (puzzleTimer) {
                 clearInterval(puzzleTimer);
                 puzzleTimer = null;
             }
             const player = players[currentPlayerIndex];
-            const special = specialSpaces[Object.keys(specialSpaces).find(key => specialSpaces[key].puzzleId === puzzleId)];
+            const specialKey = Object.keys(specialSpaces).find(key => specialSpaces[key].type === 'reves' && specialSpaces[key].puzzleId === puzzleId);
+            const special = specialSpaces[specialKey];
             
             player.score += POINTS.REVES_FAIL;
             if(player.score < 0) player.score = 0;
@@ -567,48 +702,6 @@
             }, 1500);
         }
 
-        function nextTurn() {
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
-            updateTurnInfo();
-            const nextPlayer = players[currentPlayerIndex];
-            if (nextPlayer.isStuck > 0) {
-                nextPlayer.isStuck--;
-                setTimeout(() => {
-                    showCard('Aguarde!', `${nextPlayer.name} está de "molho" nesta rodada.`, '#a1a1aa');
-                    nextTurn();
-                }, 500);
-            } else {
-                rollDiceBtn.disabled = false;
-            }
-        }
-        
-        function updatePlayersPanel() {
-            playersPanelEl.innerHTML = players.map((p, i) => `
-                <div id="player-info-${i}" class="player-info p-3 rounded-lg border-2 flex items-center justify-between transition-all duration-300" style="border-color: ${p.color};">
-                    <div class="flex items-center"><div class="w-5 h-5 rounded-full mr-3" style="background-color: ${p.color};"></div><span class="font-bold text-lg">${p.name}</span></div>
-                    <div class="text-right"><span class="font-semibold text-gray-700 block">Casa: ${p.position}</span><span class="font-bold text-[#005594] block">Pontos: ${p.score}</span></div>
-                </div>`).join('');
-            document.querySelectorAll('.player-info').forEach(el => el.classList.remove('active'));
-            document.getElementById(`player-info-${currentPlayerIndex}`).classList.add('active');
-        }
-
-        function updateTurnInfo() {
-            const player = players[currentPlayerIndex];
-            turnInfoEl.textContent = `É a vez de ${player.name}`;
-            turnInfoEl.style.color = player.color;
-        }
-
-        function showCard(title, text, color) {
-            modalContentEl.innerHTML = `<h2 class="text-3xl font-bold mb-4" style="color: ${color};">${title}</h2><p class="text-xl text-gray-700 mb-6">${text}</p><button onclick="closeModal()" class="bg-gray-700 text-white py-2 px-6 rounded-lg font-semibold hover:bg-gray-800">OK</button>`;
-            openModal();
-        }
-
-        function showQuiz(questionId) {
-            const q = quizQuestions[questionId];
-            modalContentEl.innerHTML = `<h2 class="text-3xl font-bold mb-4 text-[#818cf8]">Pergunta Quiz!</h2><p class="text-xl text-gray-700 mb-6">${q.question}</p><div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">${q.options.map((opt, i) => `<button class="p-3 border-2 border-gray-300 rounded-lg hover:bg-gray-100" onclick="checkAnswer(${questionId}, ${i})">${opt}</button>`).join('')}</div>`;
-            openModal();
-        }
-
         function showPuzzle(puzzleId) {
             const p = puzzleChallenges[puzzleId];
             modalContentEl.innerHTML = `
@@ -623,15 +716,36 @@
 
             let timeLeft = 30;
             const timerEl = document.getElementById('puzzle-timer');
+            if(puzzleTimer) clearInterval(puzzleTimer);
             puzzleTimer = setInterval(() => {
                 timeLeft--;
                 timerEl.textContent = timeLeft;
                 if (timeLeft <= 0) {
+                    clearInterval(puzzleTimer);
+                    puzzleTimer = null;
                     applyRevesPenalty(puzzleId);
                 }
             }, 1000);
         }
-        
+
+        window.checkPuzzleAnswer = function(puzzleId) {
+            if (puzzleTimer) {
+                clearInterval(puzzleTimer);
+                puzzleTimer = null;
+            }
+            const p = puzzleChallenges[puzzleId];
+            const input = document.getElementById('puzzle-input');
+            const checkBtn = document.getElementById('check-puzzle-btn');
+            if(checkBtn) checkBtn.disabled = true;
+
+            if (input.value.toUpperCase() === p.solution) {
+                showCard('Ufa!', 'Você resolveu o puzzle e escapou da penalidade!', '#4ade80');
+                setTimeout(nextTurn, 1500);
+            } else {
+                applyRevesPenalty(puzzleId);
+            }
+        }
+
         function showDecision(decisionId) {
             const d = decisionChallenges[decisionId];
             modalContentEl.innerHTML = `
@@ -659,7 +773,77 @@
             updatePlayersPanel();
             setTimeout(nextTurn, 1500);
         }
+        
+        function handleEvent(eventId){
+            const player = players[currentPlayerIndex];
+            const event = eventChallenges[eventId];
+            showCard("Evento Acadêmico!", event.text, '#7dd3fc');
 
+            if(event.points) player.score += event.points;
+            if(event.move) {
+                 player.position += event.move;
+                 if(player.position < 0) player.position = 0;
+            }
+            if(event.stuck) player.isStuck = event.stuck;
+            
+            setTimeout(() => {
+                updatePawnPosition(player, currentPlayerIndex);
+                updatePlayersPanel();
+                if(event.play_again) {
+                    rollDiceBtn.disabled = false;
+                } else {
+                    nextTurn();
+                }
+            }, 1500);
+        }
+
+        // --- FUNÇÕES DE INTERFACE E MODAIS (UI) ---
+        function updatePawnPosition(player, index) {
+            const pawn = document.getElementById(`pawn-${index}`);
+            const targetSpace = document.getElementById(`space-${player.position}`);
+            const offset = (index * 25) + 12.5;
+            pawn.style.left = `calc(${offset}% - 12.5%)`;
+            pawn.style.top = `calc(50% - 12.5%)`;
+            if(targetSpace) targetSpace.appendChild(pawn);
+            updatePlayersPanel();
+        }
+
+        function updatePlayersPanel() {
+            playersPanelEl.innerHTML = players.map((p, i) => `
+                <div id="player-info-${i}" class="player-info p-3 rounded-lg border-2 flex flex-col transition-all duration-300" style="border-color: ${p.color};">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center"><div class="w-5 h-5 rounded-full mr-3" style="background-color: ${p.color};"></div><span class="font-bold text-lg">${p.name}</span></div>
+                        <div class="text-right"><span class="font-semibold text-gray-700 block">Casa: ${p.position}</span><span class="font-bold text-[#005594] block">Pontos: ${p.score}</span></div>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-1 justify-start">${p.cards.map((c, cardIndex) => `
+                        <button onclick="showCardUsageModal(${i}, ${cardIndex})" class="px-2 py-1 text-xs font-semibold bg-purple-600 text-white rounded-md hover:bg-purple-700 shadow" title="${c.description}">${c.name}</button>
+                    `).join('')}</div>
+                </div>`).join('');
+            
+            const activePlayerInfo = document.getElementById(`player-info-${currentPlayerIndex}`);
+            document.querySelectorAll('.player-info').forEach(el => el.classList.remove('active'));
+            if(activePlayerInfo) activePlayerInfo.classList.add('active');
+        }
+
+        function updateTurnInfo() {
+            const player = players[currentPlayerIndex];
+            turnInfoEl.textContent = `É a vez de ${player.name}`;
+            turnInfoEl.style.color = player.color;
+        }
+
+        function showCard(title, text, color) {
+            modalContentEl.innerHTML = `<h2 class="text-3xl font-bold mb-4" style="color: ${color};">${title}</h2><p class="text-xl text-gray-700 mb-6">${text}</p><button onclick="closeModal()" class="bg-gray-700 text-white py-2 px-6 rounded-lg font-semibold hover:bg-gray-800">OK</button>`;
+            openModal();
+        }
+
+        function showQuiz(questionId) {
+            const q = quizQuestions[questionId];
+            const player = players[currentPlayerIndex];
+            const skipButton = player.canSkipQuiz ? `<button class="w-full mt-4 bg-purple-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-purple-700" onclick="skipQuiz()">Usar Carta 'Consulta aos Manuais'</button>` : '';
+            modalContentEl.innerHTML = `<h2 class="text-3xl font-bold mb-4 text-[#818cf8]">Pergunta Quiz!</h2><p class="text-xl text-gray-700 mb-6">${q.question}</p><div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">${q.options.map((opt, i) => `<button class="p-3 border-2 border-gray-300 rounded-lg hover:bg-gray-100" onclick="checkAnswer(${questionId}, ${i})">${opt}</button>`).join('')}</div> ${skipButton}`;
+            openModal();
+        }
+        
         window.checkAnswer = function(questionId, selectedIndex) {
             const q = quizQuestions[questionId];
             const player = players[currentPlayerIndex];
@@ -673,29 +857,11 @@
             setTimeout(nextTurn, 1500);
         }
 
-        window.checkPuzzleAnswer = function(puzzleId) {
-            if (puzzleTimer) {
-                clearInterval(puzzleTimer);
-                puzzleTimer = null;
-            }
-            const p = puzzleChallenges[puzzleId];
-            const input = document.getElementById('puzzle-input');
-            const checkBtn = document.getElementById('check-puzzle-btn');
-            if(checkBtn) checkBtn.disabled = true;
-
-            if (input.value.toUpperCase() === p.solution) {
-                showCard('Ufa!', 'Você resolveu o puzzle e escapou da penalidade!', '#4ade80');
-                setTimeout(nextTurn, 1500);
-            } else {
-                applyRevesPenalty(puzzleId);
-            }
-        }
-
         function showWinnerScreen(winner) {
             modalContentEl.innerHTML = `
                 <h2 class="text-4xl font-bold mb-4 text-[#f08324]">Fim de Jogo!</h2>
-                <p class="text-2xl text-gray-800 mb-6">O jogador com mais pontos é o vencedor!</p>
-                <div class="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4 mb-6 text-center"><p class="text-xl text-gray-800">Parabéns,</p><p class="text-3xl font-extrabold" style="color: ${winner.color};">${winner.name}!</p><p class="text-2xl font-bold">${winner.score} Pontos</p></div>
+                <p class="text-2xl text-gray-800 mb-2">O jogador com mais pontos é o vencedor!</p>
+                <div class="bg-yellow-100 border-2 border-yellow-400 rounded-lg p-4 my-6 text-center"><p class="text-xl text-gray-800">Parabéns,</p><p class="text-3xl font-extrabold" style="color: ${winner.color};">${winner.name}!</p><p class="text-2xl font-bold">${winner.score} Pontos</p></div>
                 <h3 class="text-xl font-bold mb-2">Placar Final:</h3>
                 <div class="space-y-2 text-left max-w-sm mx-auto mb-8">${players.sort((a,b) => b.score - a.score).map(p => `<div class="flex justify-between items-center p-2 rounded-md" style="background-color: ${p.color}20;"><span class="font-semibold" style="color: ${p.color};">${p.name}</span><span class="font-bold">${p.score} Pontos</span></div>`).join('')}</div>
                 <button onclick="window.location.reload()" class="bg-[#005594] text-white py-3 px-8 rounded-lg font-bold text-lg hover:bg-blue-800">Jogar Novamente</button>`;
@@ -711,19 +877,19 @@
         }
 
         window.closeModal = function() {
-            if (puzzleTimer) {
-                clearInterval(puzzleTimer);
-                puzzleTimer = null;
-            }
+            if (puzzleTimer) { clearInterval(puzzleTimer); puzzleTimer = null; }
             modalEl.classList.add('opacity-0');
             modalContentEl.classList.add('scale-95');
             setTimeout(() => modalEl.classList.add('hidden'), 300);
         }
 
+        // --- EVENT LISTENERS ---
         playerCountSelect.addEventListener('change', updatePlayerNamesInput);
         startGameBtn.addEventListener('click', setupGame);
         rollDiceBtn.addEventListener('click', rollDice);
         restartGameBtn.addEventListener('click', () => window.location.reload());
+        
+        // --- INICIALIZAÇÃO ---
         updatePlayerNamesInput();
     </script>
 </body>
